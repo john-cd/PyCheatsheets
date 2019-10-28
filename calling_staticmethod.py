@@ -1,17 +1,15 @@
-
 class A(object):
-    
     def __init__(self):
-        self.stat()   
+        self.stat()
         A.stat()
-        self.f()    
-    
+        self.f()
+
     @staticmethod
     def stat():
-        print "static method"
-    
+        print("static method")
+
     def f(self):
-        print "f"
-        
+        print("f")
+
+
 a = A()
-        

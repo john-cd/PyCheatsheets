@@ -1,5 +1,11 @@
 """Dictionary-like objects which allow multiple keys
 
+NOTE: these classes need to be reworked in depth for Python 3
+- keys are sorted by default since 3.7
+- .items(), etc are now views, not lists
+Use https://multidict.readthedocs.io/en/stable/ instead
+
+
 Python dictionaries map a key to a value.  Duplicate keys are not
 allowed, and new entries replace old ones with the same key.  Order is
 not otherwise preserved, so there's no way to get the items in the
@@ -32,9 +38,8 @@ The new methods are:
   d.allkeys()
   d.allvalues()
   d.allitems()
-  
-  >>> import MultiDict
-  >>> od = MultiDict.OrderedMultiDict()
+  >>> import multidict
+  >>> od = multidict.OrderedMultiDict()
   >>> od["Name"] = "Andrew"
   >>> od["Color"] = "BLUE"
   >>> od["Name"] = "Dalke"
@@ -47,7 +52,7 @@ The new methods are:
   >>> od.getall("Name")
   ['Andrew', 'Dalke']
   >>> for k, v in od.allitems():
-  ...     print "%r == %r" % (k, v)
+  ...     print("%r == %r" % (k, v))
   ...
   'Name' == 'Andrew'
   'Color' == 'BLUE'
@@ -58,7 +63,7 @@ The new methods are:
   >>> len(od)
   2
   >>> for k, v in od.allitems():
-  ...     print "%r == %r" % (k, v)
+  ...     print("%r == %r" % (k, v))
   ...
   'Color' == 'BLUE'
   'Color' == 'Green'
@@ -72,9 +77,8 @@ The latest version of this code can be found at
 # This software has been released to the public domain.  No
 # copyright is asserted.
 
-from __future__ import generators
 
-# Implementation inheritence -- not asserting a class hierarchy here
+# Implementation inheritance -- not asserting a class hierarchy here
 #
 # If there is a class hierarchy, OrderedMultiDict is a child of
 # UnorderedMultiDict because it makes stronger but not different
@@ -93,6 +97,7 @@ class _BaseMultiDict:
         for k in self.data:
             d[k] = self.data[k][-1]
         return str(d)
+
     def __len__(self):
         """the number of unique keys"""
         return len(self.data)
@@ -104,21 +109,21 @@ class _BaseMultiDict:
         """
         return self.data[key][-1]
 
-    def get(self, key, default = None):
+    def get(self, key, default=None):
         """value for the given key; default = None if not present
-        
+
         If more than one value exists for the key, use the one added
         most recently.
         """
         return self.data.get(key, [default])[-1]
-    
+
     def __contains__(self, key):
         """check if the key exists"""
         return key in self.data
 
     def keys(self):
         """unordered list of unique keys"""
-        return self.data.keys()
+        return list(self.data.keys())
 
     def values(self):
         """unordered list of values
@@ -126,15 +131,15 @@ class _BaseMultiDict:
         If more than one value exists for a given key, use the value
         added most recently.
         """
-        return [x[-1] for x in self.data.values()]
-    
+        return [x[-1] for x in list(self.data.values())]
+
     def items(self):
         """unordered list of key/value pairs
 
         If more than one value exists for a given key, use the value
         added most recently.
         """
-        return [(k, v[-1]) for k, v in self.data.items()]
+        return [(k, v[-1]) for k, v in list(self.data.items())]
 
     def getall(self, key):
         """Get all values for a given key
@@ -148,7 +153,7 @@ class _BaseMultiDict:
         """iterate through the list of unique keys"""
         return iter(self.data)
 
-    
+
 class OrderedMultiDict(_BaseMultiDict):
     """Store key/value mappings.
 
@@ -174,7 +179,8 @@ class OrderedMultiDict(_BaseMultiDict):
     allitems() method that returns a list of key/value pairs.
 
     """
-    def __init__(self, multidict = None):
+
+    def __init__(self, multidict=None):
         self.data = {}
         self.order_data = []
         if multidict is not None:
@@ -182,13 +188,15 @@ class OrderedMultiDict(_BaseMultiDict):
                 multidict = multidict.allitems()
             for k, v in multidict:
                 self[k] = v
+
     def __eq__(self, other):
         """Does this OrderedMultiDict have the same contents and order as another?"""
         return self.order_data == other.order_data
+
     def __ne__(self, other):
         """Does this OrderedMultiDict have different contents or order as another?"""
         return self.order_data != other.order_data
-    
+
     def __repr__(self):
         return "<OrderedMultiDict %s>" % (self.order_data,)
 
@@ -212,16 +220,17 @@ class OrderedMultiDict(_BaseMultiDict):
         """iterate over all keys in input order"""
         for x in self.order_data:
             yield x[0]
+
     def allvalues(self):
         """iterate over all values in input order"""
         for x in self.order_data:
             yield x[1]
+
     def allitems(self):
         """iterate over all key/value pairs in input order"""
         return iter(self.order_data)
 
 
-    
 class UnorderedMultiDict(_BaseMultiDict):
     """Store key/value mappings.
 
@@ -247,7 +256,8 @@ class UnorderedMultiDict(_BaseMultiDict):
     allitems() method that returns a list of key/value pairs.
 
     """
-    def __init__(self, multidict = None):
+
+    def __init__(self, multidict=None):
         self.data = {}
         if multidict is not None:
             if hasattr(multidict, "allitems"):
@@ -282,13 +292,13 @@ class UnorderedMultiDict(_BaseMultiDict):
 
     def allkeys(self):
         """iterate over all keys in arbitrary order"""
-        for k, v in self.data.iteritems():
+        for k, v in self.data.items():
             for x in v:
                 yield k
 
     def allvalues(self):
         """iterate over all values in arbitrary order"""
-        for v in self.data.itervalues():
+        for v in self.data.values():
             for x in v:
                 yield x
 
@@ -300,9 +310,10 @@ class UnorderedMultiDict(_BaseMultiDict):
         to the UnorderedMultiDict.
 
         """
-        for k, v in self.data.iteritems():
+        for k, v in self.data.items():
             for x in v:
                 yield (k, x)
+
 
 __test__ = {
     "test_ordered_multidict": """
@@ -321,7 +332,7 @@ __test__ = {
         >>> len(od.items())
         3
         >>> od.keys()
-        ['Color', 3, 'Name']
+        ['Name', 'Color', 3]
         >>> "Name" in od and "Name" in od.keys() and "Name" in od.allkeys()
         1
         >>> "Color" in od and "Color" in od.keys() and "Color" in od.allkeys()
@@ -332,18 +343,18 @@ __test__ = {
         1
         >>> od != OrderedMultiDict()    # line 25
         1
-        >>> list(od.allkeys())
+        >>> od.allkeys()
         ['Name', 'Color', 'Name', 'Color', 3]
-        >>> list(od.allvalues())
+        >>> od.allvalues()
         ['Andrew', 'BLUE', 'Dalke', 'Green', 9]
-        >>> list(od.allitems())
+        >>> od.allitems()
         [('Name', 'Andrew'), ('Color', 'BLUE'), ('Name', 'Dalke'), ('Color', 'Green'), (3, 9)]
-        >>> len(list(od))
+        >>> len(od)
         3
         >>> od["invalid"]
         Traceback (most recent call last):
           File "<stdin>", line 1, in ?
-          File "MultiDict.py", line 33, in __getitem__
+          File "multidict.py", line 33, in __getitem__
             return self.data[key]
         KeyError: invalid
         >>> od["Color"]
@@ -351,7 +362,7 @@ __test__ = {
         >>> od.getall("Color")
         ['BLUE', 'Green']
         >>> od2 = OrderedMultiDict(od)
-        >>> list(od2.allitems())
+        >>> od2.allitems()
         [('Name', 'Andrew'), ('Color', 'BLUE'), ('Name', 'Dalke'), ('Color', 'Green'), (3, 9)]
         >>> od == od2
         1
@@ -363,12 +374,12 @@ __test__ = {
         >>> od["Color"]
         Traceback (most recent call last):
           File "<stdin>", line 1, in ?
-          File "MultiDict.py", line 33, in __getitem__
+          File "multidict.py", line 33, in __getitem__
             return self.data[key]
         KeyError: Color
-        >>> list(od.allitems())
+        >>> od.allitems()
         [('Name', 'Andrew'), ('Name', 'Dalke'), (3, 9)]
-        >>> list(od2.allkeys())
+        >>> od2.allkeys()
         ['Name', 'Color', 'Name', 'Color', 3]
         >>> od2["Color"]
         'Green'
@@ -378,7 +389,7 @@ __test__ = {
         >>> s = str(od2)
         >>> s = repr(od2)
     """,
-   "test_unordered_multidict": """
+    "test_unordered_multidict": """
         >>> ud = UnorderedMultiDict()
         >>> ud["Name"] = "Andrew"
         >>> ud["Color"] = "BLUE"
@@ -400,7 +411,7 @@ __test__ = {
         >>> ud["invalid"]
         Traceback (most recent call last):
           File "<stdin>", line 1, in ?
-          File "MultiDict.py", line 105, in __getitem__
+          File "multidict.py", line 105, in __getitem__
             return self.data[key][-1]
         KeyError: invalid
         >>> ud.get("invalid")
@@ -427,7 +438,7 @@ __test__ = {
         >>> ud.getall("invalid")
         Traceback (most recent call last):
           File "<stdin>", line 1, in ?
-          File "MultiDict.py", line 126, in __getitem__
+          File "multidict.py", line 126, in __getitem__
             return self.data[key]
         KeyError: invalid
         >>> len(list(ud.allkeys())), len(list(ud.allvalues())), len(list(ud.allitems()))
@@ -473,13 +484,16 @@ __test__ = {
         >>> s = str(ud2)
         >>> s = repr(ud2)
    """,
-  "__doc__": __doc__,
+    "__doc__": __doc__,
 }
 
+
 def _test():
-    import doctest, MultiDict
-    return doctest.testmod(MultiDict)
+    import doctest
+    import multidict
+
+    return doctest.testmod(multidict)
+
 
 if __name__ == "__main__":
     _test()
-

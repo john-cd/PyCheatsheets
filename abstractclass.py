@@ -1,16 +1,23 @@
-import abc
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from abc import ABC, abstractmethod
 
-class AbstractClass(object):
-  __metaclass__ = abc.ABCMeta # Python 2.x
 
-  @abc.abstractmethod
-    def abstractMethod(self):
-        """Description"""
-        return
+class AbstractClassExample(ABC):
+    def __init__(self, value):
+        self.value = value
+        super().__init__()
 
-class ConcreteClass(AbstractClass):
-    def __init__(self):
-        self.me = "me"
+    @abstractmethod
+    def do_something(self):
+        pass
 
-c = ConcreteClass()
-c.abstractMethod()
+
+class DoAdd42(AbstractClassExample):
+    def do_something(self):
+        return self.value + 42
+
+
+if __name__ == "__main__":
+    x = DoAdd42(10)
+    print(x.do_something())
